@@ -550,8 +550,8 @@ X-USER-ID: 5
 
 - 본인 신청인지 확인.
 - 현재 `status == PENDING` 확인.
-- 동시 취소와의 race를 방어하기 위해 UPDATE에 가드 조건을 둔다:
-  - `UPDATE enrollments SET status='CONFIRMED', confirmed_at=now() WHERE id=? AND status='PENDING'`
+- 동시 취소와의 race를 방어하기 위해 UPDATE에 가드 조건을 둔다. JPA Auditing이 native UPDATE에 적용되지 않으므로 `updated_at`도 명시:
+  - `UPDATE enrollments SET status='CONFIRMED', confirmed_at=now(), updated_at=now() WHERE id=? AND status='PENDING'`
   - 영향 받은 row가 0이면 `409 INVALID_STATUS` 반환.
 
 **주요 실패**
@@ -612,20 +612,22 @@ X-USER-ID: 5
 **비즈니스 규칙**
 
 1. 본인 신청 확인.
-2. `courses` 행 `SELECT FOR UPDATE`.
-3. 현재 상태가 `PENDING` 또는 `CONFIRMED` 확인.
-4. `CONFIRMED`인 경우 `confirmed_at + cancellation_deadline_days` 이내 확인.
-5. `Enrollment.status = CANCELLED`로 전이. **결제 확정과의 race를 방어하기 위해 가드 조건 UPDATE를 사용**한다:
-   - `UPDATE enrollments SET status='CANCELLED', cancelled_at=now() WHERE id=? AND status IN ('PENDING','CONFIRMED')`
-   - 영향 받은 row가 0이면 `409 ALREADY_CANCELLED` 반환.
-6. `occupied_count -= 1`.
-7. `course.status == OPEN`이면 가장 오래된 `WAITING` 1명 자동 승격:
+2. `courses` 행 `SELECT FOR UPDATE` (자동 승격 처리를 위해).
+3. `enrollments` 행 `SELECT FOR UPDATE` (결제 확정과의 race를 직렬화). 락 획득 순서: **course → enrollment**.
+4. 락 후 재조회로 현재 상태 확인:
+   - `CANCELLED` → 409 `ALREADY_CANCELLED`
+   - `PENDING` 또는 `CONFIRMED`가 아닌 그 외 → 409 `INVALID_STATUS`
+5. `CONFIRMED`인 경우 `confirmed_at + cancellation_deadline_days` 이내 확인 (`now() <= confirmed_at + deadline`).
+6. `Enrollment.status = CANCELLED`로 전이. 가드 조건 UPDATE에 `updated_at` 명시 (JPA Auditing이 native UPDATE에 적용되지 않으므로):
+   - `UPDATE enrollments SET status='CANCELLED', cancelled_at=now(), updated_at=now() WHERE id=?`
+7. `UPDATE courses SET occupied_count = occupied_count - 1, updated_at=now() WHERE id=?`.
+8. `course.status == OPEN`이면 가장 오래된 `WAITING` 1명 자동 승격:
    - **대상 `Waitlist` 가드 조건 UPDATE**로 동시 대기 취소와의 race를 차단:
-     - `UPDATE waitlists SET status='PROMOTED', promoted_at=now() WHERE id=? AND status='WAITING'`
+     - `UPDATE waitlists SET status='PROMOTED', promoted_at=now(), updated_at=now() WHERE id=? AND status='WAITING'`
      - 영향 0이면 이미 취소된 대기자이므로 **다음 후보**(`created_at` 다음 순서)를 시도. 더 이상 후보가 없으면 승격 없이 종료.
    - 새 `Enrollment` 생성 (`status=PENDING`, `promoted_from_waitlist_id` 채움).
    - `occupied_count += 1`.
-8. `course.status == CLOSED`이면 7번 자동 승격은 건너뛴다. (단, 5·6번 취소 처리와 `occupied_count` 감소는 그대로 수행)
+9. `course.status == CLOSED`이면 8번 자동 승격은 건너뛴다. (단, 6·7번 취소 처리와 `occupied_count` 감소는 그대로 수행)
 
 **주요 실패**
 
@@ -709,8 +711,8 @@ X-USER-ID: 5
 
 - 본인 대기 확인.
 - 현재 `status == WAITING` 확인.
-- 가드 조건 UPDATE로 동시 승격과의 race 방어:
-  - `UPDATE waitlists SET status='CANCELLED', cancelled_at=now() WHERE id=? AND status='WAITING'`
+- 가드 조건 UPDATE로 동시 승격과의 race 방어. JPA Auditing이 native UPDATE에 적용되지 않으므로 `updated_at`도 명시:
+  - `UPDATE waitlists SET status='CANCELLED', cancelled_at=now(), updated_at=now() WHERE id=? AND status='WAITING'`
   - 영향 0이면 `409 INVALID_STATUS`.
 
 **주요 실패**
@@ -885,7 +887,7 @@ X-USER-ID: 5
 
 본 문서는 **API 표면(인터페이스)**과 그 설계 원칙만 정의한다. 상세 내부 정책은 다음 문서에서 다룬다.
 
-- 상태 전이 상세 정책 — `docs/STATE_TRANSITIONS.md` (작성 예정)
+- 상태 전이 상세 정책 — `docs/STATE_TRANSITIONS.md`
 - 동시성 제어 흐름 — `docs/CONCURRENCY.md` (작성 예정)
 - 예외 코드 카탈로그 — `docs/ERROR_CODES.md` (작성 예정)
 - 테스트 시나리오 — `docs/TEST_SCENARIOS.md` (작성 예정)
