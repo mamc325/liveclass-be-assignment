@@ -30,8 +30,8 @@ users
 - name VARCHAR(50) NOT NULL
 - email VARCHAR(100) NOT NULL
 - role VARCHAR(20) NOT NULL
-- created_at TIMESTAMP NOT NULL
-- updated_at TIMESTAMP NOT NULL
+- created_at TIMESTAMPTZ NOT NULL
+- updated_at TIMESTAMPTZ NOT NULL
 ```
 
 `users`는 실제 회원가입/로그인용 테이블이 아니다. 과제에서 인증/인가는 간략히 처리 가능하므로, API 요청에서는 `X-USER-ID` 헤더로 현재 사용자를 식별하고 `users.role`로 크리에이터와 수강생을 구분한다.
@@ -54,8 +54,8 @@ courses
 - end_date DATE NOT NULL
 - status VARCHAR(20) NOT NULL
 - cancellation_deadline_days INTEGER NOT NULL DEFAULT 7
-- created_at TIMESTAMP NOT NULL
-- updated_at TIMESTAMP NOT NULL
+- created_at TIMESTAMPTZ NOT NULL
+- updated_at TIMESTAMPTZ NOT NULL
 ```
 
 `courses`는 강의 기본 정보와 모집 상태를 관리한다.
@@ -89,10 +89,10 @@ enrollments
 - user_id BIGINT FK -> users.id
 - promoted_from_waitlist_id BIGINT NULL FK -> waitlists.id
 - status VARCHAR(20) NOT NULL
-- confirmed_at TIMESTAMP NULL
-- cancelled_at TIMESTAMP NULL
-- created_at TIMESTAMP NOT NULL
-- updated_at TIMESTAMP NOT NULL
+- confirmed_at TIMESTAMPTZ NULL
+- cancelled_at TIMESTAMPTZ NULL
+- created_at TIMESTAMPTZ NOT NULL
+- updated_at TIMESTAMPTZ NOT NULL
 ```
 
 `enrollments`는 실제 수강 신청 데이터를 관리한다.
@@ -131,10 +131,10 @@ waitlists
 - course_id BIGINT FK -> courses.id
 - user_id BIGINT FK -> users.id
 - status VARCHAR(20) NOT NULL
-- promoted_at TIMESTAMP NULL
-- cancelled_at TIMESTAMP NULL
-- created_at TIMESTAMP NOT NULL
-- updated_at TIMESTAMP NOT NULL
+- promoted_at TIMESTAMPTZ NULL
+- cancelled_at TIMESTAMPTZ NULL
+- created_at TIMESTAMPTZ NOT NULL
+- updated_at TIMESTAMPTZ NOT NULL
 ```
 
 `waitlists`는 정원이 찬 강의에 신청한 사용자를 관리한다.
@@ -180,8 +180,8 @@ erDiagram
         varchar name
         varchar email
         varchar role
-        timestamp created_at
-        timestamp updated_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     COURSES {
@@ -196,8 +196,8 @@ erDiagram
         date end_date
         varchar status
         integer cancellation_deadline_days
-        timestamp created_at
-        timestamp updated_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     ENROLLMENTS {
@@ -206,10 +206,10 @@ erDiagram
         bigint user_id FK
         bigint promoted_from_waitlist_id FK
         varchar status
-        timestamp confirmed_at
-        timestamp cancelled_at
-        timestamp created_at
-        timestamp updated_at
+        timestamptz confirmed_at
+        timestamptz cancelled_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     WAITLISTS {
@@ -217,10 +217,10 @@ erDiagram
         bigint course_id FK
         bigint user_id FK
         varchar status
-        timestamp promoted_at
-        timestamp cancelled_at
-        timestamp created_at
-        timestamp updated_at
+        timestamptz promoted_at
+        timestamptz cancelled_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 
@@ -479,3 +479,4 @@ users → courses → waitlists → enrollments
 8. `occupied_count <= capacity` 불변식은 DB CHECK 제약이 아닌 서비스 레이어에서 비관적 락 하에 검증한다. 동일한 비즈니스 규칙을 코드와 DDL 양쪽에 중복으로 두지 않고, 정원 관리 로직을 서비스 단일 지점에 모으기 위함이다. 트래픽이 늘거나 다중 진입점이 추가되는 고도화 시점에는 안전망으로 CHECK 제약을 추가 도입할 수 있다.
 9. UNIQUE/Partial UNIQUE 인덱스는 다중 row race를 DB 레벨에서 차단하는 안전망이자 조회 효율 자산이므로 유지한다.
 10. `price`는 원화(KRW) 기준으로 `BIGINT`를 사용한다. 소수점 단위가 없는 통화 도메인이라 정수 표현이 가장 단순하고, JPA `Long` 매핑과 산술 연산에서 부동소수 이슈가 없다. 다국가 통화 확장이 필요해지면 `NUMERIC` + `currency` 컬럼 분리로 확장 가능하다.
+11. 시간 컬럼은 모두 `TIMESTAMPTZ`로 저장하며 PostgreSQL이 내부적으로 UTC로 정규화한다. DB 세션 타임존은 `Asia/Seoul`로 설정해 API 응답은 KST(`+09:00`) 기준으로 제공한다. 다국가 확장 시 저장 데이터는 그대로 두고 응답 타임존만 조정하면 된다.
