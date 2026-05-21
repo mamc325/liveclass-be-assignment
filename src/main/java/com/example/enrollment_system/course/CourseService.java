@@ -3,6 +3,8 @@ package com.example.enrollment_system.course;
 import com.example.enrollment_system.common.auth.AuthUser;
 import com.example.enrollment_system.common.error.ErrorCode;
 import com.example.enrollment_system.course.dto.CourseCreateRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,5 +87,27 @@ public class CourseService {
                 "OPEN 상태에서만 모집을 마감할 수 있습니다.");
         }
         return courseRepository.findById(courseId).orElseThrow();
+    }
+
+    /**
+     * 강의 목록 조회 (status 필터 선택).
+     * 정렬은 호출자(컨트롤러)가 Pageable로 전달.
+     */
+    @Transactional(readOnly = true)
+    public Page<Course> list(CourseStatus statusFilter, Pageable pageable) {
+        if (statusFilter != null) {
+            return courseRepository.findByStatus(statusFilter, pageable);
+        }
+        return courseRepository.findAllBy(pageable);
+    }
+
+    /**
+     * 강의 상세 조회.
+     */
+    @Transactional(readOnly = true)
+    public Course detail(Long courseId) {
+        return courseRepository.findById(courseId)
+            .orElseThrow(() -> ErrorCode.COURSE_NOT_FOUND.with(
+                "강의를 찾을 수 없습니다. (id=" + courseId + ")"));
     }
 }
