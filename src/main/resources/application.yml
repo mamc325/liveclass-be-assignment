@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: enrollment-system
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/enrollment
+    username: enrollment
+    password: enrollment
+    hikari:
+      maximum-pool-size: 20
+      auto-commit: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+        default_batch_fetch_size: 100
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: Asia/Seoul
+
+  threads:
+    virtual:
+      enabled: false
+
+  docker:
+    compose:
+      enabled: false
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework.transaction: INFO
