@@ -6,6 +6,7 @@ import com.example.enrollment_system.course.Course;
 import com.example.enrollment_system.course.CourseRepository;
 import com.example.enrollment_system.course.CourseStatus;
 import com.example.enrollment_system.enrollment.dto.EnrollmentApplyResponse;
+import com.example.enrollment_system.enrollment.dto.EnrollmentSummary;
 import com.example.enrollment_system.waitlist.Waitlist;
 import com.example.enrollment_system.waitlist.WaitlistRepository;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -74,6 +76,36 @@ public class EnrollmentService {
             int position = currentWaitlistPosition(waitlist);
             return EnrollmentApplyResponse.waitlisted(waitlist, position);
         }
+    }
+
+    /**
+     * 결제 확정. PENDING → CONFIRMED.
+     * 동시 취소와의 race는 가드 조건 UPDATE로 차단. 별도 락 불필요.
+     * (docs/CONCURRENCY.md 7.2)
+     */
+    @Transactional
+    public EnrollmentSummary confirm(AuthUser caller, Long enrollmentId) {
+        caller.requireStudent();
+
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+            .orElseThrow(() -> ErrorCode.ENROLLMENT_NOT_FOUND.with(
+                "신청을 찾을 수 없습니다. (id=" + enrollmentId + ")"));
+
+        if (!enrollment.isOwnedBy(caller.id())) {
+            throw ErrorCode.NOT_ENROLLMENT_OWNER.asException();
+        }
+
+        int affected = enrollmentRepository.confirmIfPending(
+            enrollmentId, OffsetDateTime.now(clock));
+
+        if (affected == 0) {
+            // race로 인해 이미 다른 상태로 전이됨 (CANCELLED or CONFIRMED)
+            throw ErrorCode.INVALID_STATUS.with(
+                "현재 상태에서는 결제 확정할 수 없습니다.");
+        }
+
+        Enrollment refreshed = enrollmentRepository.findById(enrollmentId).orElseThrow();
+        return EnrollmentSummary.from(refreshed);
     }
 
     /**
