@@ -3,6 +3,12 @@ package com.example.enrollment_system.course;
 import com.example.enrollment_system.common.auth.AuthUser;
 import com.example.enrollment_system.common.error.ErrorCode;
 import com.example.enrollment_system.course.dto.CourseCreateRequest;
+import com.example.enrollment_system.enrollment.Enrollment;
+import com.example.enrollment_system.enrollment.EnrollmentRepository;
+import com.example.enrollment_system.enrollment.EnrollmentStatus;
+import com.example.enrollment_system.waitlist.Waitlist;
+import com.example.enrollment_system.waitlist.WaitlistRepository;
+import com.example.enrollment_system.waitlist.WaitlistStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,10 +24,17 @@ public class CourseService {
     private static final int DEFAULT_CANCELLATION_DEADLINE_DAYS = 7;
 
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final WaitlistRepository waitlistRepository;
     private final Clock clock;
 
-    public CourseService(CourseRepository courseRepository, Clock clock) {
+    public CourseService(CourseRepository courseRepository,
+                         EnrollmentRepository enrollmentRepository,
+                         WaitlistRepository waitlistRepository,
+                         Clock clock) {
         this.courseRepository = courseRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.waitlistRepository = waitlistRepository;
         this.clock = clock;
     }
 
@@ -109,5 +122,45 @@ public class CourseService {
         return courseRepository.findById(courseId)
             .orElseThrow(() -> ErrorCode.COURSE_NOT_FOUND.with(
                 "강의를 찾을 수 없습니다. (id=" + courseId + ")"));
+    }
+
+    /**
+     * 강의별 수강 신청 목록 (크리에이터 전용, 본인 강의만).
+     */
+    @Transactional(readOnly = true)
+    public Page<Enrollment> listEnrollmentsByCourse(
+            AuthUser caller, Long courseId,
+            EnrollmentStatus statusFilter, Pageable pageable) {
+        caller.requireCreator();
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> ErrorCode.COURSE_NOT_FOUND.with(
+                "강의를 찾을 수 없습니다. (id=" + courseId + ")"));
+        if (!course.isOwnedBy(caller.id())) {
+            throw ErrorCode.NOT_COURSE_OWNER.asException();
+        }
+        if (statusFilter != null) {
+            return enrollmentRepository.findByCourseIdAndStatus(courseId, statusFilter, pageable);
+        }
+        return enrollmentRepository.findByCourseId(courseId, pageable);
+    }
+
+    /**
+     * 강의별 대기자 목록 (크리에이터 전용, 본인 강의만).
+     */
+    @Transactional(readOnly = true)
+    public Page<Waitlist> listWaitlistsByCourse(
+            AuthUser caller, Long courseId,
+            WaitlistStatus statusFilter, Pageable pageable) {
+        caller.requireCreator();
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> ErrorCode.COURSE_NOT_FOUND.with(
+                "강의를 찾을 수 없습니다. (id=" + courseId + ")"));
+        if (!course.isOwnedBy(caller.id())) {
+            throw ErrorCode.NOT_COURSE_OWNER.asException();
+        }
+        if (statusFilter != null) {
+            return waitlistRepository.findByCourseIdAndStatus(courseId, statusFilter, pageable);
+        }
+        return waitlistRepository.findByCourseId(courseId, pageable);
     }
 }
