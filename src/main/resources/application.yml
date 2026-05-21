@@ -8,7 +8,6 @@ spring:
     password: enrollment
     hikari:
       maximum-pool-size: 20
-      auto-commit: false
 
   jpa:
     hibernate:

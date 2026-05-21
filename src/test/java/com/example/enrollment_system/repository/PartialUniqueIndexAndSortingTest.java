@@ -45,11 +45,9 @@ class PartialUniqueIndexAndSortingTest {
 
     @AfterEach
     void cleanup() {
-        // FK 방향 자식부터 삭제 (enrollments → waitlists → courses)
-        // users는 시드 보존 (id <= 19) — 동적 생성 사용자만 삭제
-        jdbc.update("DELETE FROM enrollments");
-        jdbc.update("DELETE FROM waitlists");
-        jdbc.update("DELETE FROM courses");
+        // TRUNCATE CASCADE로 3 테이블을 원자적으로 비움 — JdbcTemplate ↔ JPA 트랜잭션 가시성 우회.
+        // users는 시드 보존 (id <= 19) — 동적 생성 사용자만 삭제.
+        jdbc.execute("TRUNCATE TABLE enrollments, waitlists, courses CASCADE");
         jdbc.update("DELETE FROM users WHERE id > 100");
     }
 
