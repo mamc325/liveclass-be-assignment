@@ -546,7 +546,7 @@ PostgreSQL은 기본적으로 무한 대기. 운영 환경에서는 `SET lock_ti
 | # | 시나리오 | 검증 항목 |
 |---|---|---|
 | 1 | 마지막 한 자리 경합 (capacity 10, 동시 신청 50) | enrollment=10, waitlist=40, occupied_count=10. 초과 없음 |
-| 2 | confirm ↔ cancel race | 둘 중 하나만 성공, 다른 한쪽 409 |
+| 2 | confirm ↔ cancel race | 도착 순서에 따라 (a) cancel 먼저: confirm `INVALID_STATUS` (b) confirm 먼저 + 기간 내 cancel: 둘 다 성공, 최종 `CANCELLED` (c) confirm 먼저 + 기간 초과 cancel: cancel `CANCEL_DEADLINE_EXCEEDED`, 최종 `CONFIRMED`. 어느 순서에서도 `occupied_count` 정합성 유지 |
 | 3 | 자동 승격 ↔ 대기 취소 race | 정확히 한 명만 승격, 나머지는 본인 의도대로 취소 |
 | 4 | 같은 사용자 동시 신청 | 1건만 성공, 나머지 DUPLICATE_ENROLLMENT |
 | 5 | 같은 enrollment 중복 cancel | 1건만 성공, 나머지 ALREADY_CANCELLED |

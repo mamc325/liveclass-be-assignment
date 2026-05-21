@@ -888,6 +888,6 @@ X-USER-ID: 5
 본 문서는 **API 표면(인터페이스)**과 그 설계 원칙만 정의한다. 상세 내부 정책은 다음 문서에서 다룬다.
 
 - 상태 전이 상세 정책 — `docs/STATE_TRANSITIONS.md`
-- 동시성 제어 흐름 — `docs/CONCURRENCY.md` (작성 예정)
-- 예외 코드 카탈로그 — `docs/ERROR_CODES.md` (작성 예정)
-- 테스트 시나리오 — `docs/TEST_SCENARIOS.md` (작성 예정)
+- 동시성 제어 흐름 — `docs/CONCURRENCY.md`
+- 예외 코드 카탈로그 — `docs/ERROR_CODES.md`
+- 테스트 시나리오 — `docs/TEST_SCENARIOS.md`
