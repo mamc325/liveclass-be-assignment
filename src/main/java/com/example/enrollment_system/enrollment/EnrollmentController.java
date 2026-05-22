@@ -21,14 +21,15 @@ public class EnrollmentController {
     }
 
     /**
-     * POST /api/courses/{courseId}/enrollments — 수강 신청 (STUDENT).
+     * POST /api/courses/{id}/enrollments — 수강 신청 (STUDENT).
      * 정원이 남으면 ENROLLED, 정원이 찼으면 WAITLISTED.
+     * (CourseController와 path variable 이름 통일 — OpenAPI 중복 path 회피)
      */
-    @PostMapping("/api/courses/{courseId}/enrollments")
+    @PostMapping("/api/courses/{id}/enrollments")
     public ResponseEntity<EnrollmentApplyResponse> apply(
             @CurrentUser AuthUser caller,
-            @PathVariable Long courseId) {
-        EnrollmentApplyResponse response = enrollmentService.apply(caller, courseId);
+            @PathVariable Long id) {
+        EnrollmentApplyResponse response = enrollmentService.apply(caller, id);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
