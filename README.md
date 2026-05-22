@@ -402,6 +402,7 @@ curl -X POST http://localhost:8080/api/enrollments/2/cancel -H "X-USER-ID: 10"
 | [`docs/ERROR_CODES.md`](docs/ERROR_CODES.md) | 17개 에러 코드 카탈로그 |
 | [`docs/TEST_SCENARIOS.md`](docs/TEST_SCENARIOS.md) | 테스트 전략 / 우선순위 / 시나리오 ID |
 | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | 커밋 단위 구현 계획 |
+| [`specs/001-enrollment-system/`](specs/001-enrollment-system/) | Spec Kit으로 생성한 초기 스펙 진입점 (상세 진실 원천은 `docs/`) |
 
 ---
 
