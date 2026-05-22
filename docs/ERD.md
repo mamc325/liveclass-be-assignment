@@ -373,7 +373,7 @@ status IN ('WAITING', 'PROMOTED', 'CANCELLED')
 
 ```sql
 CREATE UNIQUE INDEX uq_active_enrollment_per_user_course
-ON enrollments(user_id, course_id)
+ON enrollments(course_id, user_id)
 WHERE status IN ('PENDING', 'CONFIRMED');
 ```
 
@@ -381,7 +381,7 @@ WHERE status IN ('PENDING', 'CONFIRMED');
 
 ```sql
 CREATE UNIQUE INDEX uq_waiting_waitlist_per_user_course
-ON waitlists(user_id, course_id)
+ON waitlists(course_id, user_id)
 WHERE status = 'WAITING';
 ```
 
@@ -417,6 +417,8 @@ WHERE promoted_from_waitlist_id IS NOT NULL;
 - `enrollments`: `PENDING`, `CONFIRMED` 상태에서는 동일 사용자/동일 강의 중복 신청 금지
 - `waitlists`: `WAITING` 상태에서는 동일 사용자/동일 강의 중복 대기 금지
 
+partial unique index의 컬럼 순서는 `(course_id, user_id)`를 채택했다. 동시 신청 흐름은 항상 `courses` row를 먼저 `PESSIMISTIC_WRITE`로 잠근 뒤 같은 `course_id`에 대해 EXISTS 검증을 수행하므로, `course_id`를 선두 컬럼으로 두면 같은 강의 데이터가 인덱스 페이지에 인접 배치되어 buffer locality가 좋아진다. EXISTS는 양쪽 = 조건이라 컬럼 순서와 무관하게 동일하게 동작한다. 컬럼 순서를 처음에는 `(user_id, course_id)`로 두었다가 V3 마이그레이션에서 `(course_id, user_id)`로 재정렬했다.
+
 커버링 인덱스는 이번 과제 범위에서는 도입하지 않았다. 데이터 규모가 크지 않고, 과제의 핵심이 조회 최적화보다 상태 전이와 동시성 제어에 있기 때문이다. 다만 강의 목록 조회 트래픽이 커지고 응답 컬럼이 제한된다면 PostgreSQL의 `INCLUDE`를 활용한 Index Only Scan을 추가로 고려할 수 있다.
 
 ### 인덱스 정의
@@ -432,7 +434,7 @@ CREATE INDEX idx_courses_creator_id
 ON courses(creator_id);
 
 CREATE UNIQUE INDEX uq_active_enrollment_per_user_course
-ON enrollments(user_id, course_id)
+ON enrollments(course_id, user_id)
 WHERE status IN ('PENDING', 'CONFIRMED');
 
 CREATE INDEX idx_enrollments_user_created
@@ -446,7 +448,7 @@ ON enrollments(promoted_from_waitlist_id)
 WHERE promoted_from_waitlist_id IS NOT NULL;
 
 CREATE UNIQUE INDEX uq_waiting_waitlist_per_user_course
-ON waitlists(user_id, course_id)
+ON waitlists(course_id, user_id)
 WHERE status = 'WAITING';
 
 CREATE INDEX idx_waitlists_course_status_created
