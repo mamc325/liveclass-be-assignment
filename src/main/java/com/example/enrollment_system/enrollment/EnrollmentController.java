@@ -3,6 +3,7 @@ package com.example.enrollment_system.enrollment;
 import com.example.enrollment_system.common.auth.AuthUser;
 import com.example.enrollment_system.common.auth.CurrentUser;
 import com.example.enrollment_system.enrollment.dto.EnrollmentApplyResponse;
+import com.example.enrollment_system.enrollment.dto.EnrollmentCancelResponse;
 import com.example.enrollment_system.enrollment.dto.EnrollmentSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,5 +41,17 @@ public class EnrollmentController {
             @CurrentUser AuthUser caller,
             @PathVariable Long id) {
         return enrollmentService.confirm(caller, id);
+    }
+
+    /**
+     * POST /api/enrollments/{id}/cancel — 수강 취소 (STUDENT, 본인 신청만).
+     * PENDING/CONFIRMED → CANCELLED. 슬롯이 비면 자동 승격 (강의 OPEN일 때).
+     * 응답의 promoted는 승격자 있을 시 채워지고, 없으면 null.
+     */
+    @PostMapping("/api/enrollments/{id}/cancel")
+    public EnrollmentCancelResponse cancel(
+            @CurrentUser AuthUser caller,
+            @PathVariable Long id) {
+        return enrollmentService.cancel(caller, id);
     }
 }
