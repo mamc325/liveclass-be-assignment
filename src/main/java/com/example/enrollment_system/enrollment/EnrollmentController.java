@@ -3,6 +3,7 @@ package com.example.enrollment_system.enrollment;
 import com.example.enrollment_system.common.auth.AuthUser;
 import com.example.enrollment_system.common.auth.CurrentUser;
 import com.example.enrollment_system.enrollment.dto.EnrollmentApplyResponse;
+import com.example.enrollment_system.enrollment.dto.EnrollmentSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,5 +29,16 @@ public class EnrollmentController {
             @PathVariable Long courseId) {
         EnrollmentApplyResponse response = enrollmentService.apply(caller, courseId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * POST /api/enrollments/{id}/confirm — 결제 확정 (STUDENT, 본인 신청만).
+     * PENDING → CONFIRMED. 외부 결제 시스템 없음 — 단순 상태 변경.
+     */
+    @PostMapping("/api/enrollments/{id}/confirm")
+    public EnrollmentSummary confirm(
+            @CurrentUser AuthUser caller,
+            @PathVariable Long id) {
+        return enrollmentService.confirm(caller, id);
     }
 }
