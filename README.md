@@ -407,4 +407,53 @@ curl -X POST http://localhost:8080/api/enrollments/2/cancel -H "X-USER-ID: 10"
 
 ## AI 활용 범위
 
-> 다음 커밋에서 보강 예정.
+본 과제는 **Claude (Anthropic)** 를 페어 프로그래밍 파트너로 적극 활용했습니다. 과제 안내가 "AI를 사용한 후 결과물을 얼마나 자기 것으로 만들었는지"를 본다고 명시했으므로, 사용 범위와 본인 판단·검증 포인트를 투명하게 기재합니다.
+
+### 사용 범위
+
+| 영역 | AI 활용 |
+|---|---|
+| **설계 문서** | ERD, API, 상태 전이, 동시성, 에러 코드, 테스트 시나리오 문서 — AI가 초안을 생성하고 본인이 피드백/수정 반복 |
+| **구현 코드** | 엔티티, Repository, Service, Controller, 테스트 — AI가 초안을 생성하고 본인이 검토 후 커밋 |
+| **리뷰** | 각 설계 문서·코드에 대해 다른 AI 시각으로 동료 리뷰를 받아 반복 개선 |
+| **에러 디버깅** | 빌드/테스트 실패 분석, 원인 추정, 해결안 제시 |
+| **문서 한국어 정리** | 변역 및 톤 통일 |
+
+### 본인 판단으로 결정한 사항 (AI 제안 거부 또는 수정)
+
+설계 과정에서 AI 제안을 그대로 받지 않고 본인 판단으로 결정/수정한 대표 사례:
+
+1. **DB CHECK 제약 제거 (`occupied_count <= capacity`)** — AI는 "defense in depth"로 DB CHECK 유지를 권했으나, 본인 원칙("동적 비즈니스 불변식은 코드 레이어에서, DDL과 코드 양쪽에 중복 두지 않음")으로 코드 검증만 사용. 같은 논리로 정적 검증(`price >= 0`, status enum 등)은 DB CHECK 유지로 경계를 그음.
+2. **선택 구현 4종 모두 포함** — 시간 부담에도 불구하고 대기열·자동 승격·크리에이터 목록·페이지네이션 전부 포함하기로 결정.
+3. **시간 표현 UTC → KST 변경** — AI 초기 제안은 UTC. 한국 서비스 도메인 고려해 KST(`+09:00`)로 변경 + DB는 `TIMESTAMPTZ`로 안전 저장.
+4. **URL 스타일 — RESTful + Action Endpoint 혼합** — 강의 상태 전이를 `PATCH /status`로 통합하지 않고 `POST /open`, `POST /close` 액션 엔드포인트로 분리.
+5. **커밋 단위로 진행** — 한 번에 큰 변경을 받지 않고 51개 단위 커밋으로 쪼개 검토 + 빌드 통과 후 push.
+6. **하이브리드 리뷰 정책** — Foundation/Domain/Infra는 커밋 하나씩 꼼꼼히, 패턴이 잡힌 Service/Controller는 batching 허용.
+
+### 테스트가 발견한 실제 버그 (AI 코드의 결함을 본인이 발견·수정)
+
+자동 테스트 작성/실행 과정에서 다음 버그를 발견하고 수정했습니다. 모두 AI가 초안 작성 시 놓친 것들이며, 본인이 테스트를 돌려보고 결과를 분석해 수정 방향을 결정했습니다.
+
+| 발견 시점 | 버그 | 수정 |
+|---|---|---|
+| Phase 2 Repository 통합 테스트 | `JPA Auditing`이 `OffsetDateTime` 미지원 → `IllegalArgumentException` | `DateTimeProvider` 빈을 `JpaConfig`에 등록해 `OffsetDateTime` 반환 |
+| Phase 2 cleanup 검증 | HikariCP `auto-commit: false`로 `JdbcTemplate.TRUNCATE`가 commit 안 됨 | `auto-commit` 명시 제거 (HikariCP 기본값 `true` 복원) |
+| Phase 5 Controller 테스트 | `EnrollmentSummary`에 `confirmedAt`/`cancelledAt` 필드 누락 (API.md 7.7 스펙과 불일치) | 두 필드 추가 (Jackson `non_null`로 null 시 자동 제외) |
+| Phase 6 CC-5 동시성 테스트 | `cancel()`의 사전 `findById` → `findByIdForUpdate`가 1차 캐시의 stale PENDING을 반환해 권위 검증을 우회 → `decrementOccupiedCount()`에서 `IllegalStateException` 발생 | `entityManager.refresh()`로 강제 재조회. **이 버그가 평가에서 가장 위험한 결함이었고 동시성 테스트로만 발견 가능했음** |
+
+### AI를 거의 안 쓴 영역 (직접 결정/판단)
+
+- Git 작업 — 모든 commit, push, rebase는 본인이 직접 수행 (AI는 명령어만 제시)
+- 기능 범위 결정 — 선택 구현 포함 여부, 미구현 항목 경계
+- 우선순위 — Must/Should/Could 분류, 시간 배분, 리뷰 깊이 vs 속도
+- 평가자 관점 설계 — 어떤 결정이 평가자에게 가치 있을지 (예: 의사결정 로그, 한국어 메시지, Swagger UI)
+- 최종 검수 — 수동 스모크 테스트, 에러 응답 형식 확인
+
+### 사용 모델
+
+- **Claude Opus 4.7** (Anthropic Claude Code CLI)
+- 대화 단위로 설계 → 구현 → 리뷰 → 수정을 반복
+
+### 한 줄 요약
+
+AI는 **타이핑과 초안 작성의 부담**을 덜어주는 도구로 활용했고, **설계 방향, 트레이드오프 결정, 평가 가치 판단, 실제 결함 발견**은 본인이 수행했습니다. 결과물의 모든 코드와 문서를 직접 검토했고, 동시성 버그를 포함한 4건의 실제 결함을 테스트 과정에서 본인이 발견·수정했습니다.
