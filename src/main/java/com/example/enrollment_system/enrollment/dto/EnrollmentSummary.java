@@ -11,6 +11,8 @@ public record EnrollmentSummary(
     Long userId,
     EnrollmentStatus status,
     Long promotedFromWaitlistId,
+    OffsetDateTime confirmedAt,
+    OffsetDateTime cancelledAt,
     OffsetDateTime createdAt
 ) {
     public static EnrollmentSummary from(Enrollment e) {
@@ -20,6 +22,8 @@ public record EnrollmentSummary(
             e.getUserId(),
             e.getStatus(),
             e.getPromotedFromWaitlistId(),
+            e.getConfirmedAt(),
+            e.getCancelledAt(),
             e.getCreatedAt()
         );
     }
