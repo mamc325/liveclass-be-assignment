@@ -49,6 +49,15 @@ server:
     include-binding-errors: always
     include-stacktrace: never
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+
 logging:
   level:
     root: INFO
