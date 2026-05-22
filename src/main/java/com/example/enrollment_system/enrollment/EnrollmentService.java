@@ -11,6 +11,8 @@ import com.example.enrollment_system.enrollment.dto.EnrollmentSummary;
 import com.example.enrollment_system.enrollment.dto.PromotedInfo;
 import com.example.enrollment_system.waitlist.Waitlist;
 import com.example.enrollment_system.waitlist.WaitlistRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,9 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final WaitlistRepository waitlistRepository;
     private final Clock clock;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public EnrollmentService(CourseRepository courseRepository,
                              EnrollmentRepository enrollmentRepository,
@@ -139,8 +144,11 @@ public class EnrollmentService {
             .orElseThrow(() -> ErrorCode.COURSE_NOT_FOUND.asException());
 
         // 3. enrollment 락 + 재조회
+        // 사전 read의 1차 캐시가 stale일 수 있으므로 refresh로 DB의 최신 상태 강제 동기화.
+        // (CONCURRENCY.md 6.5 — native UPDATE/PESSIMISTIC 후 stale entity 회피)
         Enrollment enrollment = enrollmentRepository.findByIdForUpdate(enrollmentId)
             .orElseThrow(() -> ErrorCode.ENROLLMENT_NOT_FOUND.asException());
+        entityManager.refresh(enrollment);
 
         // 4. 권위 검증
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
