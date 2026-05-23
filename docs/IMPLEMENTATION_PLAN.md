@@ -1,19 +1,5 @@
 # BE-A 수강 신청 시스템 구현 계획 (커밋 단위)
 
-> 작성일: 2026-05-21
-> 마감: 2026-05-24 23:59 (잔여 ~3일)
-
----
-
-## 0. 시간 배분
-
-| 일자 | 핵심 작업 |
-|---|---|
-| **5/21 (수, 잔여)** | Phase 1 |
-| **5/22 (목)** | Phase 2 + Phase 3 + Phase 4 절반 |
-| **5/23 (금)** | Phase 4 완료 + Phase 5 + Phase 6 Must |
-| **5/24 (토)** | Phase 6 Should/Could + Phase 7 + 제출 |
-
 ---
 
 ## 1. 커밋 규칙 및 빌드 정책
@@ -53,15 +39,15 @@
 | Must + Should | **51** |
 | Could 포함 (전체) | **54** |
 
-| Phase | Must+Should 수 | 누적 | 예상 시점 |
-|---|---|---|---|
-| 1. Foundation | 5 | 5 | 5/21 저녁 |
-| 2. Core Domain | 13 | 18 | 5/22 오전~오후 |
-| 3. Infrastructure | 6 | 24 | 5/22 오후 |
-| 4. Business Services | 10 | 34 | 5/22 저녁 ~ 5/23 오후 |
-| 5. Controllers + Swagger | 10 | 44 | 5/23 오후~저녁 |
-| 6. Concurrency + Acceptance (Must+Should) | 3 (+Could 3) | 47 (50) | 5/23 저녁 ~ 5/24 오전 |
-| 7. Polish & Submission | 4 | 51 (54) | 5/24 오전~오후 |
+| Phase | Must+Should 수 | 누적 |
+|---|---|---|
+| 1. Foundation | 5 | 5 |
+| 2. Core Domain | 13 | 18 |
+| 3. Infrastructure | 6 | 24 |
+| 4. Business Services | 10 | 34 |
+| 5. Controllers + Swagger | 10 | 44 |
+| 6. Concurrency + Acceptance (Must+Should) | 3 (+Could 3) | 47 (50) |
+| 7. Polish & Submission | 4 | 51 (54) |
 
 ---
 
@@ -84,7 +70,7 @@
 
 ---
 
-## 4. Phase 1: Foundation (5 commits, 5/21 저녁)
+## 4. Phase 1: Foundation (5 commits)
 
 | # | type(scope) | 메시지 | 주요 파일 / 비고 |
 |---|---|---|---|
@@ -100,7 +86,7 @@
 
 ---
 
-## 5. Phase 2: Core Domain (13 commits, 5/22 오전~오후)
+## 5. Phase 2: Core Domain (13 commits)
 
 | # | type(scope) | 메시지 | 비고 |
 |---|---|---|---|
@@ -122,7 +108,7 @@
 
 ---
 
-## 6. Phase 3: Infrastructure (6 commits, 5/22 오후)
+## 6. Phase 3: Infrastructure (6 commits)
 
 | # | type(scope) | 메시지 | 비고 |
 |---|---|---|---|
@@ -139,7 +125,7 @@
 
 ---
 
-## 7. Phase 4: Business Services (10 commits, 5/22 저녁 ~ 5/23 오후)
+## 7. Phase 4: Business Services (10 commits)
 
 ### 7.1 CourseService
 
@@ -170,7 +156,7 @@
 
 ---
 
-## 8. Phase 5: Controllers + Swagger (10 commits, 5/23 오후~저녁)
+## 8. Phase 5: Controllers + Swagger (10 commits)
 
 ### 8.1 CourseController
 
@@ -206,7 +192,7 @@
 
 ---
 
-## 9. Phase 6: Concurrency + Acceptance (5/23 저녁 ~ 5/24 오전)
+## 9. Phase 6: Concurrency + Acceptance
 
 ### 9.1 Must (필수)
 
@@ -233,7 +219,7 @@
 
 ---
 
-## 10. Phase 7: Polish & Submission (4 commits, 5/24 오전~오후)
+## 10. Phase 7: Polish & Submission (4 commits)
 
 | # | type(scope) | 메시지 | 비고 |
 |---|---|---|---|

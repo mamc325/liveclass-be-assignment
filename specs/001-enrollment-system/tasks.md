@@ -3,7 +3,7 @@
 **기능**: `001-enrollment-system`
 **참조 문서**: `docs/IMPLEMENTATION_PLAN.md`, `docs/TEST_SCENARIOS.md`, `docs/API.md`
 
-작업 상태는 2026-05-21 현재 저장소 내용을 기준으로 표시했다. `[P]`는 충돌 범위만 명확하면 병렬 진행 가능한 작업이다.
+`[P]`는 충돌 범위만 명확하면 병렬 진행 가능한 작업이다.
 
 ## 0단계 - Spec Kit 기준 문서
 
