@@ -326,16 +326,9 @@ Flyway V2가 다음 12명을 고정 ID로 주입합니다. `X-USER-ID` 헤더에
 4. **커밋 단위로 진행** — 한 번에 큰 변경을 받지 않고 51개 단위 커밋으로 쪼개 검토 + 빌드 통과 후 push.
 5. **하이브리드 리뷰 정책** — Foundation/Domain/Infra는 커밋 하나씩 꼼꼼히, 패턴이 잡힌 Service/Controller는 batching 허용.
 
-### 테스트가 발견한 실제 버그 (AI 코드의 결함을 본인이 발견·수정)
+### 테스트로 직접 검증한 부분
 
-자동 테스트 작성/실행 과정에서 다음 버그를 발견하고 수정했습니다. 모두 AI가 초안 작성 시 놓친 것들이며, 본인이 테스트를 돌려보고 결과를 분석해 수정 방향을 결정했습니다.
-
-| 발견 시점 | 버그 | 수정 |
-|---|---|---|
-| Phase 2 Repository 통합 테스트 | `JPA Auditing`이 `OffsetDateTime` 미지원 → `IllegalArgumentException` | `DateTimeProvider` 빈을 `JpaConfig`에 등록해 `OffsetDateTime` 반환 |
-| Phase 2 cleanup 검증 | HikariCP `auto-commit: false`로 `JdbcTemplate.TRUNCATE`가 commit 안 됨 | `auto-commit` 명시 제거 (HikariCP 기본값 `true` 복원) |
-| Phase 5 Controller 테스트 | `EnrollmentSummary`에 `confirmedAt`/`cancelledAt` 필드 누락 (API.md 7.7 스펙과 불일치) | 두 필드 추가 (Jackson `non_null`로 null 시 자동 제외) |
-| Phase 6 CC-5 동시성 테스트 | `cancel()`의 사전 `findById` → `findByIdForUpdate`가 1차 캐시의 stale PENDING을 반환해 권위 검증을 우회 → `decrementOccupiedCount()`에서 `IllegalStateException` 발생 | `entityManager.refresh()`로 강제 재조회. **이 버그가 평가에서 가장 위험한 결함이었고 동시성 테스트로만 발견 가능했음** |
+동시성·환경 설정·DTO 스펙 등 AI가 놓친 결함 4건을 테스트를 직접 돌리며 발견하고 수정했습니다. 그 중 가장 큰 학습은 동시 취소 시나리오에서 ORM 1차 캐시가 잠금 조회 결과를 stale 상태로 반환해 정합성 검증을 우회하던 버그였고, 잠금 조회 직후 강제 재조회를 추가해 해결했습니다.
 
 ### AI를 거의 안 쓴 영역 (직접 결정/판단)
 
@@ -349,6 +342,6 @@ Flyway V2가 다음 12명을 고정 ID로 주입합니다. `X-USER-ID` 헤더에
 - **Claude Opus 4.7** (Anthropic Claude Code CLI)
 - 대화 단위로 설계 → 구현 → 리뷰 → 수정을 반복
 
-### 한 줄 요약
+### 정리
 
-AI는 **타이핑과 초안 작성의 부담**을 덜어주는 도구로 활용했고, **설계 방향, 트레이드오프 결정, 평가 가치 판단, 실제 결함 발견**은 본인이 수행했습니다. 결과물의 모든 코드와 문서를 직접 검토했고, 동시성 버그를 포함한 4건의 실제 결함을 테스트 과정에서 본인이 발견·수정했습니다.
+기초 설계는 Spec Kit으로 골격을 잡은 뒤, 모든 설계 영역에 AI를 활용해 문서를 작성했습니다. 실제 구현은 커밋 단위로 작업 계획을 세워 AI에게 코드 작성을 시키고 매 커밋마다 직접 검토하는 방식으로 진행했습니다. 문서를 자세히 적은 가장 큰 이유는 AI의 할루시네이션을 줄이기 위함이었고, 명확한 목표와 제약을 미리 글로 고정해두면 AI가 그 범위 안에서만 결과물을 내놓도록 통제할 수 있다는 것을 경험했습니다. AI와 함께 고민하는 과정을 반복하면서, 결국 좋은 결과물은 좋은 설계에서 나온다는 점을 다시 깨달았습니다.
