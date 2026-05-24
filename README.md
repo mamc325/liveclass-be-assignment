@@ -324,7 +324,6 @@ Flyway V2가 다음 12명을 고정 ID로 주입합니다. `X-USER-ID` 헤더에
 2. **시간 표현 UTC → KST 변경** — AI 초기 제안은 UTC. 한국 서비스 도메인 고려해 KST(`+09:00`)로 변경 + DB는 `TIMESTAMPTZ`로 안전 저장.
 3. **URL 스타일 — RESTful + Action Endpoint 혼합** — 강의 상태 전이를 `PATCH /status`로 통합하지 않고 `POST /open`, `POST /close` 액션 엔드포인트로 분리.
 4. **커밋 단위로 진행** — 한 번에 큰 변경을 받지 않고 51개 단위 커밋으로 쪼개 검토 + 빌드 통과 후 push.
-5. **하이브리드 리뷰 정책** — Foundation/Domain/Infra는 커밋 하나씩 꼼꼼히, 패턴이 잡힌 Service/Controller는 batching 허용.
 
 ### 테스트로 직접 검증한 부분
 
@@ -334,7 +333,6 @@ Flyway V2가 다음 12명을 고정 ID로 주입합니다. `X-USER-ID` 헤더에
 
 - 기능 범위 결정 — 선택 구현 포함 여부, 미구현 항목 경계
 - 우선순위 — Must/Should/Could 분류, 시간 배분, 리뷰 깊이 vs 속도
-- 평가자 관점 설계 — 어떤 결정이 평가자에게 가치 있을지 (예: 의사결정 로그, 한국어 메시지, Swagger UI)
 - 최종 검수 — 수동 스모크 테스트, 에러 응답 형식 확인
 
 ### 사용 모델
